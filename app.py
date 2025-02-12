@@ -21,7 +21,7 @@ app = Flask(__name__)
 CORS(app)  # ✅ Enable CORS
 
 # ✅ Configure PostgreSQL (Update credentials)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')  # Render sets this variable automatically
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://scraberdb_user:EV2D5VDBzTsG79iG8FPdoUQtfDo32yVe@dpg-cukas2d6l47c73c9m420-a.oregon-postgres.render.com/scraberdb'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # ✅ Initialize database & migration
