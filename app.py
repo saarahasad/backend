@@ -1,7 +1,7 @@
 from flask import Flask, jsonify,request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from models import db, Platform, Product, ScrapedData,LiveScrapedProduct,User
+from models import db, Platform, Product, ScrapedData,LiveScrapedProduct,User,Pincode
 import re
 import pytz
 from flask_cors import CORS  # ✅ Import CORS
@@ -91,7 +91,7 @@ def parse_quantity(quantity_text):
 def get_pincodes():
     """Fetch all unique pincodes from the pincodes table."""
     
-    pincodes = db.session.query(Pincodes.pincode).distinct().all()
+    pincodes = db.session.query(Pincode.pincode).distinct().all()
 
     if not pincodes:
         return jsonify({"error": "No pincodes found"}), 404
