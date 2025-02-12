@@ -89,9 +89,9 @@ def parse_quantity(quantity_text):
 
 @app.route('/pincodes', methods=['GET'])
 def get_pincodes():
-    """Fetch all unique pincodes from the scraped data."""
+    """Fetch all unique pincodes from the pincodes table."""
     
-    pincodes = db.session.query(ScrapedData.pincode).distinct().all()
+    pincodes = db.session.query(Pincodes.pincode).distinct().all()
 
     if not pincodes:
         return jsonify({"error": "No pincodes found"}), 404
@@ -100,6 +100,7 @@ def get_pincodes():
     pincode_list = [pincode[0] for pincode in pincodes]
 
     return jsonify(pincode_list)
+
 
 
 @app.route('/latest_scraped_entries/<product_id>', methods=['GET'])
