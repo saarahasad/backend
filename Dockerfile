@@ -28,6 +28,7 @@ WORKDIR /app
 # Copy the project files into the container
 COPY . /app
 
+RUN pip install --upgrade pip setuptools
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
