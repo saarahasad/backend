@@ -20,9 +20,9 @@ RUN apt-get update && apt-get install -y \
     libxcomposite1 \
     libxrandr2 \
     libgbm-dev \
-    libpq-dev \                # Add PostgreSQL development libraries for psycopg2
-    build-essential \          # Install build tools to compile psycopg2
-    python3-dev \              # Required for building Python C extensions
+    libpq-dev \
+    build-essential \  # Install build tools to compile psycopg2
+    python3-dev \      # Required for building Python C extensions
     && apt-get clean
 
 # Set the working directory for your app
