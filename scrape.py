@@ -2,7 +2,7 @@ import asyncio
 import random
 from playwright.async_api import async_playwright
 from flask import Flask
-from models import db, Platform, Product, ScrapedData,Pincode
+from models import db, Platform, Product, ScrapedData, Pincode
 from config import DATABASE_URL
 import pytz
 from datetime import datetime
@@ -21,16 +21,18 @@ USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
 ]
 
+
 def fetch_pincodes():
     """Fetch pincodes from the database within Flask app context."""
-    with app.app_context():  #  Ensures correct application context
+    with app.app_context():  # Ensures correct application context
         return [p.pincode for p in Pincode.query.all()]
+
 
 #  Now fetching pincodes works correctly
 PINCODES = fetch_pincodes()
 
-#for pincode in PINCODES[:10]:  # Example loop
-    #print(f"Processing pincode: {pincode}")
+# for pincode in PINCODES[:10]:  # Example loop
+# print(f"Processing pincode: {pincode}")
 
 synonyms_dict = {
     "cashews": ["cashew", "kaju", "cashew nuts", "whole cashews"],
@@ -40,12 +42,14 @@ synonyms_dict = {
 }
 
 # Define blacklisted words to avoid unwanted products
-blacklist_terms = ["cookie", "flavored", "chocolate", "snack", "bar", "biscuits"]
+blacklist_terms = ["cookie", "flavored",
+                   "chocolate", "snack", "bar", "biscuits"]
+
 
 def is_relevant_product(product_name, search_query, synonyms_dict=None, blacklist_terms=None):
     """
     Check if the product name contains the full search phrase or all individual words in the query.
-    
+
     Parameters:
     - product_name (str): The name of the scraped product.
     - search_query (str): The original search term.
@@ -98,7 +102,8 @@ async def set_location_blinkit(page, pincode):
         #  If input field is not found, click on the location bar
         try:
             await page.locator("div.LocationBar__Title-sc-x8ezho-8").click()
-            await page.wait_for_selector("input[name='select-locality']", timeout=5000)  # Wait again after clicking
+            # Wait again after clicking
+            await page.wait_for_selector("input[name='select-locality']", timeout=5000)
         except:
             print("❌ Unable to open location selection!")
 
@@ -125,7 +130,8 @@ async def scrape_products_blinkit(page, product, platform_name, pincode, scrape_
         with app.app_context():
             platform = Platform.query.filter_by(name=platform_name).first()
             if not platform:
-                platform = Platform(name=platform_name, website_url="https://blinkit.com/")
+                platform = Platform(name=platform_name,
+                                    website_url="https://blinkit.com/")
                 db.session.add(platform)
                 db.session.commit()
 
@@ -142,20 +148,22 @@ async def scrape_products_blinkit(page, product, platform_name, pincode, scrape_
                     if not is_relevant_product(name, product, synonyms_dict, blacklist_terms):
                         print(f"🚫 Skipping irrelevant product: {name}")
                         continue  # Skip this product if it's not relevant
-                    
+
                     price_elements = await product_element.locator('.Product__UpdatedPriceAndAtcContainer-sc-11dk8zk-10 div div').all_text_contents()
                     quantity_text = await product_element.locator('.plp-product__quantity--box').text_content() or ""
 
                     #  First, locate the image (NO `await` here)
-                    image_element = product_element.locator('.Imagestyles__ImageContainer-sc-1u3ccmn-0 img')
+                    image_element = product_element.locator(
+                        '.Imagestyles__ImageContainer-sc-1u3ccmn-0 img')
 
                     #  Then, use `await` only when calling `get_attribute()`
                     image_url = await image_element.get_attribute('src') if await image_element.count() > 0 else None
 
-
                     #  Convert prices safely
-                    discounted_price = float(price_elements[0].replace('₹', '').strip()) if price_elements else 0
-                    original_price = float(price_elements[1].replace('₹', '').strip()) if len(price_elements) > 1 else discounted_price
+                    discounted_price = float(price_elements[0].replace(
+                        '₹', '').strip()) if price_elements else 0
+                    original_price = float(price_elements[1].replace('₹', '').strip()) if len(
+                        price_elements) > 1 else discounted_price
 
                     #  Save data to the database
                     scraped_entry = ScrapedData(
@@ -167,11 +175,11 @@ async def scrape_products_blinkit(page, product, platform_name, pincode, scrape_
                         original_price=original_price,
                         pincode=pincode,
                         scraped_at=scrape_timestamp,
-                        image_url=image_url  #  Save Image URL
+                        image_url=image_url  # Save Image URL
                     )
                     db.session.add(scraped_entry)
 
-                    #print(f"✅ Scraped: {name} | Price: ₹{discounted_price} | Image: {image_url}")
+                    # print(f"✅ Scraped: {name} | Price: ₹{discounted_price} | Image: {image_url}")
 
                 except Exception as e:
                     print(f"❌ Error scraping Blinkit product: {e}")
@@ -189,14 +197,14 @@ async def set_location_swiggy(page, pincode):
 
         await page.goto("https://www.swiggy.com/instamart", timeout=60000)
 
-        await asyncio.sleep(3) 
-        
+        await asyncio.sleep(3)
+
         popup_visible = await page.locator('div[data-testid="search-location"]').is_visible()
 
         if not popup_visible:
-                    print("ℹ️ Popup is not visible, clicking on 'Delivery to' button...")
-                    await page.locator('div[data-testid="address-bar"]').click()
-                    await asyncio.sleep(2)  # Allow popup to open
+            print("ℹ️ Popup is not visible, clicking on 'Delivery to' button...")
+            await page.locator('div[data-testid="address-bar"]').click()
+            await asyncio.sleep(2)  # Allow popup to open
 
         await page.locator('div[data-testid="search-location"]').click()
 
@@ -228,7 +236,8 @@ async def scrape_products_swiggy(page, product, platform_name, pincode, scrape_t
         await asyncio.sleep(1)
 
         await page.wait_for_selector('input[data-testid="search-page-header-search-bar-input"]', timeout=5000)
-        search_input = page.locator('input[data-testid="search-page-header-search-bar-input"]')
+        search_input = page.locator(
+            'input[data-testid="search-page-header-search-bar-input"]')
         await search_input.fill(product)
         await search_input.press("Enter")
         await asyncio.sleep(3)  # Wait for results to load
@@ -237,18 +246,20 @@ async def scrape_products_swiggy(page, product, platform_name, pincode, scrape_t
         try:
             await page.wait_for_selector('div._3ZzU7', timeout=10000)
         except:
-            print(f"⚠️ No results found for {product} in Swiggy Instamart ({pincode})")
+            print(
+                f"⚠️ No results found for {product} in Swiggy Instamart ({pincode})")
             return
 
         products = await page.locator("div.XjYJe").all()
-        #print(f"✅ Found {len(products)} products for {product}")
+        # print(f"✅ Found {len(products)} products for {product}")
 
         #  Step 3: Store data in the database
         with app.app_context():
             # Ensure platform exists
             platform = Platform.query.filter_by(name=platform_name).first()
             if not platform:
-                platform = Platform(name=platform_name, website_url="https://www.swiggy.com/instamart")
+                platform = Platform(
+                    name=platform_name, website_url="https://www.swiggy.com/instamart")
                 db.session.add(platform)
                 db.session.commit()
 
@@ -272,23 +283,26 @@ async def scrape_products_swiggy(page, product, platform_name, pincode, scrape_t
                         continue  # Skip this product if it's not relevant
 
                     #  Fetch packaging size
-                    quantity_locator = product_element.locator('div.sc-aXZVg.entQHA')
+                    quantity_locator = product_element.locator(
+                        'div.sc-aXZVg.entQHA')
                     quantity_text = await quantity_locator.text_content() if await quantity_locator.count() > 0 else "N/A"
 
                     #  Extract Discounted Price
-                    discounted_price_locator = product_element.locator('div.sc-aXZVg.jLtxeJ')
+                    discounted_price_locator = product_element.locator(
+                        'div.sc-aXZVg.jLtxeJ')
                     has_discounted_price = await discounted_price_locator.count() > 0
                     discounted_price = await discounted_price_locator.get_attribute("aria-label") if has_discounted_price else None
 
                     #  Extract Original Price (Strikethrough Price)
-                    original_price_locator = product_element.locator('div[data-testid="itemOfferPrice"]')
+                    original_price_locator = product_element.locator(
+                        'div[data-testid="itemOfferPrice"]')
                     has_original_price = await original_price_locator.count() > 0
                     original_price = await original_price_locator.get_attribute("aria-label") if has_original_price else discounted_price
-                    
-                    await page.evaluate("window.scrollBy(0, 1000)")  # Scroll down to force loading
+
+                    # Scroll down to force loading
+                    await page.evaluate("window.scrollBy(0, 1000)")
                     await asyncio.sleep(3)  # Give time for images to load
 
-                    
                     #  Extract Product Image
                    # image_locator = product_element.locator("img")
                    # image_url = await image_locator.get_attribute("src") if await image_locator.count() > 0 else None
@@ -300,13 +314,16 @@ async def scrape_products_swiggy(page, product, platform_name, pincode, scrape_t
                         image_url = await image_locator.first.get_attribute("src") or await image_locator.first.get_attribute("data-src")
                     else:
                         # Check if image is stored in a background-image style
-                        bg_image_locator = product_element.locator("div[style*='background-image']")
+                        bg_image_locator = product_element.locator(
+                            "div[style*='background-image']")
                         if await bg_image_locator.count() > 0:
                             style = await bg_image_locator.first.get_attribute("style")
-                            image_url = re.search(r'url\(["\']?(.*?)["\']?\)', style).group(1) if style else None
+                            image_url = re.search(
+                                r'url\(["\']?(.*?)["\']?\)', style).group(1) if style else None
 
                     if image_count > 0:
-                        image_url = await image_locator.first.get_attribute("src")  # Fetch the first valid product image
+                        # Fetch the first valid product image
+                        image_url = await image_locator.first.get_attribute("src")
                     else:
                         image_url = None  # Fallback if no image found
 
@@ -330,7 +347,7 @@ async def scrape_products_swiggy(page, product, platform_name, pincode, scrape_t
                         original_price=original_price,
                         pincode=pincode,
                         scraped_at=scrape_timestamp,
-                        image_url=image_url  #  Store image URL
+                        image_url=image_url  # Store image URL
                     ))
 
                    # print(f"✅ Swiggy Instamart Data saved: {name} - ₹{final_discounted_price} | Image: {image_url}")
@@ -342,14 +359,16 @@ async def scrape_products_swiggy(page, product, platform_name, pincode, scrape_t
             try:
                 db.session.bulk_save_objects(scraped_entries)
                 db.session.commit()
-                print(f"✅ Swiggy Instamart Data saved for {product} in {pincode}")
+                print(
+                    f"✅ Swiggy Instamart Data saved for {product} in {pincode}")
 
             except IntegrityError as e:
                 db.session.rollback()
                 print(f"❌ Database Integrity Error: {e}")
 
     except Exception as e:
-        print(f"❌ Error scraping Swiggy Instamart '{product}' for {pincode}: {e}")
+        print(
+            f"❌ Error scraping Swiggy Instamart '{product}' for {pincode}: {e}")
 
 
 async def set_location_zepto(page, pincode):
@@ -372,7 +391,7 @@ async def set_location_zepto(page, pincode):
     await page.wait_for_selector("[data-testid='location-confirm-btn']", timeout=10000)
     await page.click("[data-testid='location-confirm-btn']")
 
-    await asyncio.sleep(2)  #  Wait to ensure location is set
+    await asyncio.sleep(2)  # Wait to ensure location is set
     print(f"✅ Zepto location set for pincode: {pincode}")
 
 
@@ -383,12 +402,14 @@ async def scrape_products_zepto(page, product, platform_name, pincode, scrape_ti
         await page.goto("https://www.zeptonow.com/search", timeout=60000)
 
         #  Type the product name and press Enter
-        search_box = page.locator("input[placeholder='Search for over 5000 products']")
+        search_box = page.locator(
+            "input[placeholder='Search for over 5000 products']")
         await search_box.click()
         await search_box.fill("")
         await page.keyboard.type(product, delay=100)
-        await page.keyboard.press("Enter")  
-        await page.wait_for_timeout(3000)  # Small delay to allow results to load
+        await page.keyboard.press("Enter")
+        # Small delay to allow results to load
+        await page.wait_for_timeout(3000)
 
         results_selector = '[data-testid="product-card"]'
         no_results_selector = "text=No products found"
@@ -397,7 +418,8 @@ async def scrape_products_zepto(page, product, platform_name, pincode, scrape_ti
         no_results_found = await page.locator(no_results_selector).count()
 
         if no_results_found > 0:
-            print(f"⚠️ No products found for '{product}' in {pincode}. Skipping...")
+            print(
+                f"⚠️ No products found for '{product}' in {pincode}. Skipping...")
             return
 
         if results_found == 0:
@@ -406,7 +428,8 @@ async def scrape_products_zepto(page, product, platform_name, pincode, scrape_ti
             results_found = await page.locator(results_selector).count()
 
             if results_found == 0:
-                print(f"⚠️ Still no results for '{product}' in {pincode}. Skipping...")
+                print(
+                    f"⚠️ Still no results for '{product}' in {pincode}. Skipping...")
                 return
 
         products = await page.locator(results_selector).all()
@@ -414,7 +437,8 @@ async def scrape_products_zepto(page, product, platform_name, pincode, scrape_ti
         with app.app_context():
             platform = Platform.query.filter_by(name=platform_name).first()
             if not platform:
-                platform = Platform(name=platform_name, website_url="https://www.zeptonow.com/search")
+                platform = Platform(
+                    name=platform_name, website_url="https://www.zeptonow.com/search")
                 db.session.add(platform)
                 db.session.commit()
 
@@ -434,10 +458,11 @@ async def scrape_products_zepto(page, product, platform_name, pincode, scrape_ti
                         continue  # Skip this product if it's not relevant
 
                     discounted_price_text = await product_element.locator('[data-testid="product-card-price"]').text_content(timeout=5000) or ""
-                    
+
                     #  Extract original price (if available)
-                    original_price_text = discounted_price_text  
-                    original_price_locator = product_element.locator('p.line-through')
+                    original_price_text = discounted_price_text
+                    original_price_locator = product_element.locator(
+                        'p.line-through')
                     if await original_price_locator.count() > 0:
                         original_price_text = await original_price_locator.text_content(timeout=2000)
 
@@ -447,12 +472,13 @@ async def scrape_products_zepto(page, product, platform_name, pincode, scrape_ti
 
                     #  Ensure at least one image exists
                     if all_images:
-                        image_url = await all_images[0].get_attribute('src')  #  Get the first image (Main Product Image)
+                        # Get the first image (Main Product Image)
+                        image_url = await all_images[0].get_attribute('src')
                     else:
-                        image_url = None  #  If no image found, set to None
-
+                        image_url = None  # If no image found, set to None
 
                     #  Convert prices safely
+
                     def extract_price(text):
                         return float(text.replace('₹', '').strip()) if text and text.strip() else 0
 
@@ -469,11 +495,11 @@ async def scrape_products_zepto(page, product, platform_name, pincode, scrape_ti
                         original_price=original_price,
                         pincode=pincode,
                         scraped_at=scrape_timestamp,
-                        image_url=image_url  #  Save Image URL
+                        image_url=image_url  # Save Image URL
                     )
 
                     db.session.add(scraped_entry)
-                    #print(f"✅ Scraped: {name} | Price: ₹{discounted_price} | Image: {image_url}")
+                    # print(f"✅ Scraped: {name} | Price: ₹{discounted_price} | Image: {image_url}")
 
                 except Exception as e:
                     print(f"❌ Error scraping product: {e}")
@@ -485,6 +511,8 @@ async def scrape_products_zepto(page, product, platform_name, pincode, scrape_ti
         print(f"❌ Error scraping Zepto {product} for {pincode}: {e}")
 
 ###  Main function to run both scrapers ###
+
+
 async def run_scraper():
     """Run Playwright scrapers for both Blinkit & Zepto across multiple pincodes."""
     scrape_timestamp = datetime.now(IST)
@@ -503,9 +531,9 @@ async def run_scraper():
                 products = [p.name for p in Product.query.all()]
 
             for product in products:
-                await scrape_products_swiggy(page, product, "Swiggy", pincode,scrape_timestamp)
-                await scrape_products_blinkit(page, product, "Blinkit", pincode,scrape_timestamp)
-                await scrape_products_zepto(page, product, "Zepto", pincode,scrape_timestamp)
+                await scrape_products_swiggy(page, product, "Swiggy", pincode, scrape_timestamp)
+                await scrape_products_blinkit(page, product, "Blinkit", pincode, scrape_timestamp)
+                await scrape_products_zepto(page, product, "Zepto", pincode, scrape_timestamp)
 
         await browser.close()
 

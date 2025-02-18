@@ -832,6 +832,7 @@ def scrape():
     
     final_results = asyncio.run(scrape_all(product, pincode, synonyms_dict, blacklist_terms,category))
     #print(final_results)
+    print("Executed and Returned.")
     return jsonify(final_results)
 
 
