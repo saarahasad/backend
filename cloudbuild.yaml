@@ -7,6 +7,25 @@ steps:
         pip install -r requirements.txt
         gunicorn -b 0.0.0.0:8080 app:app
 
+  - name: "gcr.io/cloud-builders/apt"
+    args: ["install", "-y", "chromium", "chromium-driver", "libnss3", "libx11-xcb1", "libxcomposite1", "libxrandr2", "libasound2"]
+    
+  - name: "python"
+    entrypoint: "pip"
+    args: ["install", "-r", "requirements.txt"]
+
+  - name: "python"
+    entrypoint: "python"
+    args: ["-m", "playwright", "install"]
+
+  - name: "python"
+    entrypoint: "gunicorn"
+    args: ["-b", "0.0.0.0:8080", "app:app"]
+
+timeout: "600s"
+
+
+
 timeout: '600s'
 
 options:

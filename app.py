@@ -15,6 +15,9 @@ from sqlalchemy import cast, String
 import bcrypt
 from sqlalchemy import text
 import os
+
+import asyncio
+
 IST = pytz.timezone("Asia/Kolkata")
 
 app = Flask(__name__)
@@ -31,6 +34,13 @@ migrate = Migrate(app, db)
 # ✅ Ensure tables exist
 with app.app_context():
     db.create_all()
+
+async def install_playwright():
+    from playwright._impl._driver import get_driver_env
+    env = get_driver_env()
+    return env
+
+asyncio.run(install_playwright())
 
 @app.route('/')
 def home():
