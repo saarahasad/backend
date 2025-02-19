@@ -1,24 +1,36 @@
 steps:
+  # Install Python dependencies
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
         pip install -r requirements.txt
-        gunicorn -b 0.0.0.0:8080 app:app
 
-
+  # Install necessary dependencies for Playwright and Chromium
   - name: "gcr.io/cloud-builders/apt"
-    args: ["install", "-y", "chromium", "chromium-driver", "libnss3", "libx11-xcb1", "libxcomposite1", "libxrandr2", "libasound2"]
-    
+    args: [
+      "install", "-y",
+      "chromium", "chromium-driver",
+      "libnss3", "libx11-xcb1", "libxcomposite1",
+      "libxrandr2", "libasound2",
+      "libxdamage1", "libxfixes3", "libxi6",
+      "libxrender1", "libatk1.0-0", "libcairo2",
+      "libpango-1.0-0", "libpangocairo-1.0-0",
+      "libcups2", "libxshmfence1", "libgbm1"
+    ]
+
+  # Install Playwright dependencies
+  - name: "python"
+    entrypoint: "python"
+    args: ["-m", "playwright", "install", "--with-deps"]
+
+  # Install application dependencies again to ensure correct installation
   - name: "python"
     entrypoint: "pip"
     args: ["install", "-r", "requirements.txt"]
 
-  - name: "python"
-    entrypoint: "python"
-    args: ["-m", "playwright", "install"]
-
+  # Run the application using Gunicorn
   - name: "python"
     entrypoint: "gunicorn"
     args: ["-b", "0.0.0.0:8080", "app:app"]
