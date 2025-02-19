@@ -829,9 +829,11 @@ def scrape():
     category = data.get("category")
     synonyms_dict = data.get("synonyms", {})
     blacklist_terms = data.get("blacklist_terms", [])
-    
-    final_results = asyncio.run(scrape_all(product, pincode, synonyms_dict, blacklist_terms,category))
-    #print(final_results)
+    loop = asyncio.get_event_loop()
+    if loop.is_running():
+        final_results = await scrape_all(product, pincode, synonyms_dict, blacklist_terms, category)
+    else:
+        final_results = loop.run_until_complete(scrape_all(product, pincode, synonyms_dict, blacklist_terms, category))    #print(final_results)
     print("Executed and Returned.")
     return jsonify(final_results)
 
