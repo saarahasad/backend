@@ -15,7 +15,7 @@ from sqlalchemy import cast, String
 import bcrypt
 from sqlalchemy import text
 import os
-
+import sys
 import asyncio
 
 IST = pytz.timezone("Asia/Kolkata")
@@ -36,6 +36,11 @@ with app.app_context():
     db.create_all()
 
 
+if sys.platform.startswith('win'):
+   asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+else:
+   asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
+   
 # Install Playwright browsers dynamically before running
 async def install_playwright():
     from playwright._impl._driver import get_driver_env
