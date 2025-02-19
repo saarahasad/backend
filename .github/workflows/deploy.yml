@@ -21,12 +21,36 @@ jobs:
         service_account_key: ${{ secrets.GCP_SA_KEY }}
         export_default_credentials: true
 
-    - name: Install Dependencies
+    - name: Install System Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y chromium chromium-driver libnss3 libx11-xcb1 libxcomposite1 libxrandr2 libasound2
+        sudo apt-get install -y \
+          chromium chromium-driver \
+          libnss3 libx11-xcb1 libxcomposite1 \
+          libxrandr2 libasound2 libxdamage1 \
+          libxfixes3 libxi6 libxrender1 libcups2 \
+          libatk1.0-0 libatk-bridge2.0-0 libcairo2 \
+          libpango-1.0-0 libpangocairo-1.0-0 libgbm1 libxshmfence1
+        
+    - name: Install GLIBC 2.29
+      run: |
+        sudo apt-get install -y build-essential manpages-dev
+        wget http://ftp.gnu.org/gnu/libc/glibc-2.29.tar.gz
+        tar -xvzf glibc-2.29.tar.gz
+        cd glibc-2.29
+        mkdir build
+        cd build
+        ../configure --prefix=/opt/glibc-2.29
+        make -j$(nproc)
+        sudo make install
+        echo "/opt/glibc-2.29/lib" | sudo tee -a /etc/ld.so.conf.d/glibc-2.29.conf
+        sudo ldconfig
+        export LD_LIBRARY_PATH=/opt/glibc-2.29/lib:$LD_LIBRARY_PATH
+
+    - name: Install Python Dependencies
+      run: |
         pip install -r requirements.txt
-        python -m playwright install
+        python -m playwright install --with-deps
 
     - name: Deploy to Cloud Run
       run: |

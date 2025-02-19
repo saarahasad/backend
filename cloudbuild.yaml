@@ -1,29 +1,30 @@
 steps:
-  # Install GLIBC 2.28 manually
+  # Install GLIBC 2.29 manually
   - name: "gcr.io/cloud-builders/curl"
     args:
       - "-s"
       - "-L"
       - "-o"
-      - "/tmp/glibc-2.28.tar.gz"
-      - "http://ftp.gnu.org/gnu/libc/glibc-2.28.tar.gz"
+      - "/tmp/glibc-2.29.tar.gz"
+      - "http://ftp.gnu.org/gnu/libc/glibc-2.29.tar.gz"
 
   - name: "gcr.io/cloud-builders/bash"
     args:
       - "-c"
       - |
         cd /tmp
-        tar -xvzf glibc-2.28.tar.gz
-        cd glibc-2.28
+        tar -xvzf glibc-2.29.tar.gz
+        cd glibc-2.29
         mkdir build
         cd build
-        ../configure --prefix=/opt/glibc-2.28
+        ../configure --prefix=/opt/glibc-2.29
         make -j$(nproc)
         make install
-        echo "/opt/glibc-2.28/lib" >> /etc/ld.so.conf.d/glibc-2.28.conf
+        echo "/opt/glibc-2.29/lib" >> /etc/ld.so.conf.d/glibc-2.29.conf
         ldconfig
+        export LD_LIBRARY_PATH=/opt/glibc-2.29/lib:$LD_LIBRARY_PATH
 
-  # Install dependencies
+  # Install Playwright dependencies
   - name: "gcr.io/cloud-builders/apt"
     args: [
       "install", "-y",
@@ -31,12 +32,12 @@ steps:
       "libnss3", "libx11-xcb1", "libxcomposite1",
       "libxrandr2", "libasound2",
       "libxdamage1", "libxfixes3", "libxi6",
-      "libxrender1", "libatk1.0-0", "libcairo2",
-      "libpango-1.0-0", "libpangocairo-1.0-0",
+      "libxrender1", "libatk1.0-0", "libatk-bridge2.0-0",
+      "libcairo2", "libpango-1.0-0", "libpangocairo-1.0-0",
       "libcups2", "libxshmfence1", "libgbm1"
     ]
 
-  # Install Playwright
+  # Install Playwright (with all necessary dependencies)
   - name: "python"
     entrypoint: "python"
     args: ["-m", "playwright", "install", "--with-deps"]
@@ -46,7 +47,7 @@ steps:
     entrypoint: "pip"
     args: ["install", "-r", "requirements.txt"]
 
-  # Run Gunicorn
+  # Run Gunicorn server
   - name: "python"
     entrypoint: "gunicorn"
     args: ["-b", "0.0.0.0:8080", "app:app"]
