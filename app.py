@@ -821,7 +821,7 @@ async def scrape_all(product, pincode, synonyms_dict, blacklist_terms,category):
         return results
 
 @app.route('/scrape', methods=['POST'])
-def scrape():
+async def scrape():
     """API endpoint to scrape live data based on user input."""
     data = request.json
     product = data.get("product")
