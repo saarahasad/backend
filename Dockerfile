@@ -1,47 +1,43 @@
-FROM python:3.11-slim
+# Use a base image with glibc_2.28+
+FROM ubuntu:20.04  # Ubuntu 20.04 includes glibc 2.31
+WORKDIR /app
 
-# Install necessary system dependencies required for Playwright and psycopg2
+# Install required system dependencies
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
-    libx11-dev \
-    libgtk-3-0 \
-    libdbus-1-3 \
-    libgdk-pixbuf2.0-0 \
-    libasound2 \
+    chromium \
+    chromium-driver \
     libnss3 \
-    libxss1 \
-    libxtst6 \
-    libappindicator3-1 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libgdk-pixbuf2.0-0 \
-    libnspr4 \
+    libx11-xcb1 \
     libxcomposite1 \
     libxrandr2 \
-    libgbm-dev \
-    libpq-dev \
-    build-essential \ 
-    python3-dev \     
-    && apt-get clean
+    libasound2 \
+    libxdamage1 \
+    libxfixes3 \
+    libxi6 \
+    libxrender1 \
+    libcups2 \
+    libxshmfence1 \
+    libgbm1 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set the working directory for your app
-WORKDIR /app
+# Install Python
+RUN apt-get install -y python3 python3-pip && ln -s /usr/bin/python3 /usr/bin/python
 
-# Copy the project files into the container
-COPY . /app
-
-# Upgrade pip and setuptools
-RUN pip install --upgrade pip setuptools
-
-# Install Python dependencies (including psycopg2 and Playwright)
+# Install application dependencies
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright and its browsers
-RUN python -m playwright install
+# Install Playwright and dependencies
+RUN pip install playwright
+RUN playwright install --with-deps
 
-# Expose the application port
-EXPOSE 8000
+# Copy the application code
+COPY . .
 
-# Start the application using Gunicorn (or any other WSGI server)
-CMD ["gunicorn", "app:app"]
+# Expose port 8080 for Cloud Run
+EXPOSE 8080
+
+# Run the application
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "app:app"]
