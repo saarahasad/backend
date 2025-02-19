@@ -15,9 +15,6 @@ from sqlalchemy import cast, String
 import bcrypt
 from sqlalchemy import text
 import os
-import sys
-import asyncio
-
 IST = pytz.timezone("Asia/Kolkata")
 
 app = Flask(__name__)
@@ -34,21 +31,6 @@ migrate = Migrate(app, db)
 # ✅ Ensure tables exist
 with app.app_context():
     db.create_all()
-
-
-if sys.platform.startswith('win'):
-   asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-else:
-   asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
-   
-# Install Playwright browsers dynamically before running
-async def install_playwright():
-    from playwright._impl._driver import get_driver_env
-    env = get_driver_env()
-    return env
-
-asyncio.run(install_playwright())  # Run before calling Playwright
-asyncio.run(install_playwright())
 
 @app.route('/')
 def home():
@@ -710,8 +692,6 @@ async def scrape_swiggy(page, product, pincode, synonyms_dict,blacklist_terms, s
         return []
 
 async def scrape_all(product, pincode, synonyms_dict, blacklist_terms,category):
-    await install_playwright()  # Ensure Playwright is installed
-
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch(headless=True)
         scrape_timestamp = datetime.now(IST)
@@ -841,7 +821,7 @@ async def scrape_all(product, pincode, synonyms_dict, blacklist_terms,category):
         return results
 
 @app.route('/scrape', methods=['POST'])
-async def scrape():
+def scrape():
     """API endpoint to scrape live data based on user input."""
     data = request.json
     product = data.get("product")
@@ -850,7 +830,7 @@ async def scrape():
     synonyms_dict = data.get("synonyms", {})
     blacklist_terms = data.get("blacklist_terms", [])
     
-    final_results = await scrape_all(product, pincode, synonyms_dict, blacklist_terms, category)
+    final_results = asyncio.run(scrape_all(product, pincode, synonyms_dict, blacklist_terms,category))
     #print(final_results)
     print("Executed and Returned.")
     return jsonify(final_results)
