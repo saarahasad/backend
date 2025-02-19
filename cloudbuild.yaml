@@ -1,13 +1,29 @@
 steps:
-  # Install Python dependencies
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'bash'
+  # Install GLIBC 2.28 manually
+  - name: "gcr.io/cloud-builders/curl"
     args:
-      - '-c'
-      - |
-        pip install -r requirements.txt
+      - "-s"
+      - "-L"
+      - "-o"
+      - "/tmp/glibc-2.28.tar.gz"
+      - "http://ftp.gnu.org/gnu/libc/glibc-2.28.tar.gz"
 
-  # Install necessary dependencies for Playwright and Chromium
+  - name: "gcr.io/cloud-builders/bash"
+    args:
+      - "-c"
+      - |
+        cd /tmp
+        tar -xvzf glibc-2.28.tar.gz
+        cd glibc-2.28
+        mkdir build
+        cd build
+        ../configure --prefix=/opt/glibc-2.28
+        make -j$(nproc)
+        make install
+        echo "/opt/glibc-2.28/lib" >> /etc/ld.so.conf.d/glibc-2.28.conf
+        ldconfig
+
+  # Install dependencies
   - name: "gcr.io/cloud-builders/apt"
     args: [
       "install", "-y",
@@ -20,17 +36,17 @@ steps:
       "libcups2", "libxshmfence1", "libgbm1"
     ]
 
-  # Install Playwright dependencies
+  # Install Playwright
   - name: "python"
     entrypoint: "python"
     args: ["-m", "playwright", "install", "--with-deps"]
 
-  # Install application dependencies again to ensure correct installation
+  # Install Python dependencies
   - name: "python"
     entrypoint: "pip"
     args: ["install", "-r", "requirements.txt"]
 
-  # Run the application using Gunicorn
+  # Run Gunicorn
   - name: "python"
     entrypoint: "gunicorn"
     args: ["-b", "0.0.0.0:8080", "app:app"]
