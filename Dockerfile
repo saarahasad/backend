@@ -27,9 +27,9 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Playwright and ensure Chromium is set up
-RUN pip install --no-cache-dir playwright
-RUN playwright install chromium --with-deps
+# Install Playwright and force Chromium installation
+RUN pip install --no-cache-dir playwright && \
+    playwright install chromium --with-deps
 
 # Set Playwright to use the correct Chromium binary path
 ENV PLAYWRIGHT_BROWSERS_PATH="/root/.cache/ms-playwright"

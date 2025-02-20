@@ -693,7 +693,10 @@ async def scrape_swiggy(page, product, pincode, synonyms_dict,blacklist_terms, s
 
 async def scrape_all(product, pincode, synonyms_dict, blacklist_terms,category):
     async with async_playwright() as playwright:
-        browser = await playwright.chromium.launch(headless=True)
+        browser = await p.chromium.launch(
+            headless=True,
+            executable_path="/root/.cache/ms-playwright/chromium-1140/chrome-linux/chrome"  # Set correct Chromium path
+        )
         scrape_timestamp = datetime.now(IST)
         # Create separate contexts for each platform to avoid conflicts
         context_blinkit = await browser.new_context(user_agent=random.choice(USER_AGENTS))
@@ -820,8 +823,9 @@ async def scrape_all(product, pincode, synonyms_dict, blacklist_terms,category):
         await browser.close()
         return results
 
+
 @app.route('/scrape', methods=['POST'])
-async def scrape():
+def scrape():
     """API endpoint to scrape live data based on user input."""
     data = request.json
     product = data.get("product")
@@ -829,14 +833,13 @@ async def scrape():
     category = data.get("category")
     synonyms_dict = data.get("synonyms", {})
     blacklist_terms = data.get("blacklist_terms", [])
-    loop = asyncio.get_event_loop()
-    if loop.is_running():
-        final_results = await scrape_all(product, pincode, synonyms_dict, blacklist_terms, category)
-    else:
-        final_results = loop.run_until_complete(scrape_all(product, pincode, synonyms_dict, blacklist_terms, category))    #print(final_results)
+
+    # Run async function safely inside Flask
+    final_results = asyncio.run(scrape_all(product, pincode, synonyms_dict, blacklist_terms, category))
+
     print("Executed and Returned.")
     return jsonify(final_results)
-
+    
 
 @app.route('/live_product_history', methods=['GET'])
 def live_product_history():
