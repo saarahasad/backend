@@ -1,7 +1,7 @@
-# Use a base image with glibc_2.28+
-FROM ubuntu:20.04  # Ubuntu 20.04 includes glibc 2.31
-WORKDIR /app
+# Use an official Python base image (Includes Python & Pip)
+FROM python:3.11-slim
 
+WORKDIR /app
 
 # Install required system dependencies
 RUN apt-get update && apt-get install -y \
@@ -23,21 +23,20 @@ RUN apt-get update && apt-get install -y \
     libgbm1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python
-RUN apt-get install -y python3 python3-pip && ln -s /usr/bin/python3 /usr/bin/python
-
-# Install application dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Install Playwright and dependencies
-RUN pip install playwright
+# Install Playwright and ensure Chromium is set up
+RUN pip install --no-cache-dir playwright
 RUN playwright install --with-deps
+
+# Copy application dependencies first (for better caching)
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code
 COPY . .
 
-# Expose port 8080 for Cloud Run
+# Expose port 8080 for Google Cloud Run
 EXPOSE 8080
 
 # Run the application
