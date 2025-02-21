@@ -32,7 +32,7 @@ RUN pip install --no-cache-dir playwright \
     && playwright install --with-deps chromium  && ls -la /root/.cache/ms-playwright/chromium-*
 
 # Set Playwright to use the correct Chromium binary path
-ENV PLAYWRIGHT_BROWSERS_PATH="/root/.cache/ms-playwright"
+ENV PLAYWRIGHT_BROWSERS_PATH="/home/runner/.cache/ms-playwright/chromium-1140/chrome-linux/chrome" 
 
 # Copy application dependencies first (for better caching)
 COPY requirements.txt .

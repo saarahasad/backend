@@ -695,7 +695,7 @@ async def scrape_all(product, pincode, synonyms_dict, blacklist_terms,category):
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch(
             headless=True,
-            executable_path="/root/.cache/ms-playwright/chromium-1140/chrome-linux/chrome"  # Set correct Chromium path
+            executable_path="/home/runner/.cache/ms-playwright/chromium-1140/chrome-linux/chrome"  # GitHub Actions
         )
         scrape_timestamp = datetime.now(IST)
         # Create separate contexts for each platform to avoid conflicts
