@@ -692,10 +692,20 @@ async def scrape_swiggy(page, product, pincode, synonyms_dict,blacklist_terms, s
         return []
 
 async def scrape_all(product, pincode, synonyms_dict, blacklist_terms,category):
+      # Dynamically detect Chromium path
+    chromium_path = None
+    for root, _, files in os.walk("/home/runner/.cache/ms-playwright"):
+        if "chrome" in files:
+            chromium_path = os.path.join(root, "chrome")
+            break
+
+    if not chromium_path or not os.path.exists(chromium_path):
+        raise FileNotFoundError(f"Chromium not found! Installed path: {chromium_path}")
+
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch(
             headless=True,
-            executable_path="/home/runner/.cache/ms-playwright/chromium-1140/chrome-linux/chrome"  # GitHub Actions
+            executable_path=chromium_path  # Use the correct path
         )
         scrape_timestamp = datetime.now(IST)
         # Create separate contexts for each platform to avoid conflicts

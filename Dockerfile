@@ -1,4 +1,4 @@
-# Use an official Python base image
+# Use a lightweight Python base image
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -28,15 +28,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Playwright and force Chromium installation
-RUN pip install --no-cache-dir playwright && \
-    playwright install --with-deps chromium && \
-    echo "Installed Chromium at:" && \
-    find /home/runner/.cache/ms-playwright -name "chrome"  # Debug step: list Chromium path
+RUN pip install --no-cache-dir playwright \
+    && playwright install --with-deps chromium  && ls -la /root/.cache/ms-playwright/chromium-*
 
 # Set Playwright to use the correct Chromium binary path
-ENV PLAYWRIGHT_BROWSERS_PATH="/home/runner/.cache/ms-playwright"
+ENV PLAYWRIGHT_BROWSERS_PATH="/home/runner/.cache/ms-playwright" 
 
-# Copy application dependencies first
+# Copy application dependencies first (for better caching)
 COPY requirements.txt .
 
 # Install Python dependencies
@@ -45,7 +43,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the application code
 COPY . .
 
-# Expose port 8080 for Cloud Run
+# Expose port 8080 for Google Cloud Run
 EXPOSE 8080
 
 # Run the application
