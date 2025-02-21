@@ -1,4 +1,4 @@
-# Use an official Python base image (Slim version for smaller size)
+# Use a lightweight Python base image
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -28,8 +28,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Playwright and force Chromium installation
-RUN pip install --no-cache-dir playwright && \
-    playwright install chromium --with-deps
+RUN pip install --no-cache-dir playwright \
+    && playwright install --with-deps chromium  && ls -la /root/.cache/ms-playwright/chromium-*
 
 # Set Playwright to use the correct Chromium binary path
 ENV PLAYWRIGHT_BROWSERS_PATH="/root/.cache/ms-playwright"
