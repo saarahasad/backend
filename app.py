@@ -693,7 +693,7 @@ async def scrape_swiggy(page, product, pincode, synonyms_dict,blacklist_terms, s
 
 async def scrape_all(product, pincode, synonyms_dict, blacklist_terms,category):
     async with async_playwright() as playwright:
-        browser = await p.chromium.launch(
+        browser = await playwright.chromium.launch(
             headless=True,
             executable_path="/root/.cache/ms-playwright/chromium-1140/chrome-linux/chrome"  # Set correct Chromium path
         )
@@ -839,7 +839,7 @@ def scrape():
 
     print("Executed and Returned.")
     return jsonify(final_results)
-    
+
 
 @app.route('/live_product_history', methods=['GET'])
 def live_product_history():
