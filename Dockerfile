@@ -29,10 +29,16 @@ RUN apt-get update && apt-get install -y \
 
 # Install Playwright and force Chromium installation
 RUN pip install --no-cache-dir playwright \
-    && playwright install --with-deps chromium  && ls -la /root/.cache/ms-playwright/chromium-*
+    && playwright install --with-deps chromium
 
-# Set Playwright to use the correct Chromium binary path
-ENV PLAYWRIGHT_BROWSERS_PATH="/home/runner/.cache/ms-playwright" 
+# Create the target directory in the image
+RUN mkdir -p /app/.cache/ms-playwright
+
+# Copy the Chromium installation.  This is the KEY change!
+COPY --from=0 /home/runner/.cache/ms-playwright /app/.cache/ms-playwright
+
+# Set Playwright to use the correct Chromium binary path within the image
+ENV PLAYWRIGHT_BROWSERS_PATH="/app/.cache/ms-playwright"
 
 # Copy application dependencies first (for better caching)
 COPY requirements.txt .
